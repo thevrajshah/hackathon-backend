@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -150,30 +150,52 @@ func main() {
   	}
 	log.Printf("🚀 Starting up on http://localhost:%s", port)
 
-	r := mux.NewRouter()
-	
-    http.Handle("*",handlers.LoggingHandler(os.Stdout, r))
+	// r := mux.NewRouter()
+	r := chi.NewRouter()
 
-	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+	r.Use(middleware.Logger)
+
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
-	}).Methods("GET")
-	r.HandleFunc("/teams", GetTeams).Methods("GET")
-	r.HandleFunc("/teams/{id}", GetTeam).Methods("GET")
-	r.HandleFunc("/participants", GetParticipants).Methods("GET")
-	r.HandleFunc("/participants/{id}", GetParticipant).Methods("GET")
-	r.HandleFunc("/locations", GetLocations).Methods("GET")
-	r.HandleFunc("/attendance", GetAttendance).Methods("GET")
-	r.HandleFunc("/actions", GetActions).Methods("GET")
+	})
 
-	r.HandleFunc("/teams", CreateTeam).Methods("POST")
-	r.HandleFunc("/participants", CreateParticipant).Methods("POST")
-	r.HandleFunc("/attendance", CreateAttendance).Methods("POST")
-	r.HandleFunc("/actions", CreateAction).Methods("POST")
+	r.Route("/teams", func(r chi.Router) {
+		r.Get("/", GetTeams)
+		r.Get("/{id}", GetTeam)
 
-	r.HandleFunc("/teams/{id}", DeleteTeam).Methods("DELETE")
-	r.HandleFunc("/participants/{id}", DeleteParticipant).Methods("DELETE")
-	r.HandleFunc("/attendance/{id}", DeleteAttendance).Methods("DELETE")
-	r.HandleFunc("/actions/{id}", DeleteAction).Methods("DELETE")
+		r.Post("/", CreateTeam)
+		r.Delete("/{id}", DeleteTeam)
+	})
+
+	r.Route("/participants", func(r chi.Router) {
+		r.Get("/", GetParticipants)
+		r.Get("/{id}", GetParticipant)
+
+		r.Post("/", CreateParticipant)
+		r.Delete("/{id}", DeleteParticipant)
+	})
+
+	r.Route("/locations", func(r chi.Router) {
+		r.Get("/", GetLocations)
+		r.Get("/{id}", GetLocation)
+
+		r.Post("/", CreateParticipant)
+		r.Delete("/{id}", DeleteLocation)
+	})
+	
+	r.Route("/attendance", func(r chi.Router) {
+		r.Get("/", GetAttendance)
+		
+		r.Post("/", CreateAttendance)
+		r.Delete("/{id}", DeleteAttendance)
+	})
+	
+	r.Route("/actions", func(r chi.Router) {
+		r.Get("/", GetActions)
+		
+		r.Post("/", CreateAction)
+		r.Delete("/{id}", DeleteAction)
+	})
 
 	http.ListenAndServe(":8080", r)
 }
@@ -182,11 +204,11 @@ func main() {
 
 /*----- Team ------*/
 func GetTeam(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 	var team Team
 	var participants []Participant
 
-	db.First(&team, params["id"])
+	db.First(&team, id)
 	db.Model(&team)
 
 	team.Members = participants
@@ -217,11 +239,11 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&createdTeam)
 }
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 
 	var team Team
 
-	db.First(&team, params["id"])
+	db.First(&team, id)
 	db.Delete(&team)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -230,10 +252,10 @@ func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 
 /*------- Participant ------*/
 func GetParticipant(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 	var participant Participant
 
-	db.First(&participant, params["id"])
+	db.First(&participant, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&participant)
@@ -273,11 +295,11 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&createdParticipant)
 }
 func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 
 	var participant Participant
 
-	db.First(&participant, params["id"])
+	db.First(&participant, id)
 	db.Delete(&participant)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -286,10 +308,10 @@ func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
 
 /*------- Location ------*/
 func GetLocation(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 	var location Location
 
-	db.First(&location, params["id"])
+	db.First(&location, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&location)
@@ -316,11 +338,11 @@ func CreateLocation(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&createdLocation)
 }
 func DeleteLocation(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 
 	var location Location
 
-	db.First(&location, params["id"])
+	db.First(&location, id)
 	db.Delete(&location)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -349,11 +371,11 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&createdAttendance)
 }
 func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 
 	var attendance Attendance
 
-	db.First(&attendance, params["id"])
+	db.First(&attendance, id)
 	db.Delete(&attendance)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -382,11 +404,11 @@ func CreateAction(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&createdAction)
 }
 func DeleteAction(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	id := chi.URLParam(r,"id")
 
 	var action Action
 
-	db.First(&action, params["id"])
+	db.First(&action, id)
 	db.Delete(&action)
 
 	w.Header().Set("Content-Type", "application/json")

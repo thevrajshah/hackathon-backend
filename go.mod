@@ -3,15 +3,12 @@ module hackathon_backend
 go 1.19
 
 require (
-	github.com/gorilla/handlers v1.5.1
-	github.com/gorilla/mux v1.8.0
 	gorm.io/driver/postgres v1.3.10
 	gorm.io/gorm v1.23.9
 )
 
-require github.com/felixge/httpsnoop v1.0.3 // indirect
-
 require (
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
