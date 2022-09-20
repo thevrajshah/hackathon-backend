@@ -112,9 +112,7 @@ var db *gorm.DB
 var err error
 
 func main() {
-
 	// Loading enviroment variables
-	// dialect := os.Getenv("DIALECT")
 	host := os.Getenv("DB_HOST")
 	dbport := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
@@ -136,7 +134,7 @@ func main() {
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(&Location{})
+	db.AutoMigrate(&Location{}, &Team{}, &Participant{}, &Action{}, &Attendance{})
 	db.AutoMigrate(&Team{})
 	db.AutoMigrate(&Participant{})
 
@@ -160,12 +158,18 @@ func main() {
 	r.HandleFunc("/participants", GetParticipants).Methods("GET")
 	r.HandleFunc("/participants/{id}", GetParticipant).Methods("GET")
 	r.HandleFunc("/locations", GetLocations).Methods("GET")
+	r.HandleFunc("/attendance", GetAttendance).Methods("GET")
+	r.HandleFunc("/actions", GetActions).Methods("GET")
 
 	r.HandleFunc("/teams", CreateTeam).Methods("POST")
 	r.HandleFunc("/participants", CreateParticipant).Methods("POST")
+	r.HandleFunc("/attendance", CreateAttendance).Methods("POST")
+	r.HandleFunc("/actions", CreateAction).Methods("POST")
 
 	r.HandleFunc("/teams/{id}", DeleteTeam).Methods("DELETE")
 	r.HandleFunc("/participants/{id}", DeleteParticipant).Methods("DELETE")
+	r.HandleFunc("/attendance/{id}", DeleteAttendance).Methods("DELETE")
+	r.HandleFunc("/actions/{id}", DeleteAction).Methods("DELETE")
 
 	http.ListenAndServe(":8080", r)
 }
