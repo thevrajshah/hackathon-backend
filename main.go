@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gorm.io/driver/postgres"
-
 	"gorm.io/gorm"
 )
 
@@ -20,14 +19,38 @@ const (
 	MALE    Gender = "MALE"
 	FEMALE    Gender = "FEMALE"
 )
+type Department string
+const (
+	Aero    Department = "AERO"
+	Ce    Department = "CE"
+	Civil    Department = "CIVIL"
+	Ec   Department = "EC"
+	Ele   Department = "ELE"
+	Ic   Department = "IC"
+	It   Department = "IT"
+	Mca   Department = "MCA"
+)
+type ShirtSize string
+const (
+	XS    ShirtSize = "XS"
+	S    ShirtSize = "S"
+	M    ShirtSize = "M"
+	L    ShirtSize = "L"
+	XL    ShirtSize = "XL"
+	XXL    ShirtSize = "XXL"
+	XXXL    ShirtSize = "XXXL"
+)
 type Participant struct{
 	gorm.Model
 	
-	Name string	
-	Email string `gorm:"unique_index"`
-	Phone int
-	TeamID uint
-	Gender `gorm:"type:project_type"`
+	Name string	`json:"name" validate:"required"`
+	Email string `json:"email" gorm:"unique_index" validate:"required"`
+	Phone int `json:"phone" validate:"required"`
+	Gender `gorm:"type:gender" json:"gender" validate:"required"`
+	Department `json:"department" validate:"required"`
+	ShirtSize `json:"shirt_size" validate:"required"`
+	TeamID uint `json:"team_id" validate:"required"`
+	Team Team `json:"team"`
 } 
 	
 // Teams
@@ -40,20 +63,20 @@ const (
 type Team struct {
   gorm.Model
 
-  Name string
-  MaleCount int
-  FemaleCount int
-  ProjectType `gorm:"type:project_type"`
-  LocationID int
-  Location Location
-  Members []Participant
+  Name string `json:"name" validate:"required"`
+  MaleCount int `json:"male_count" validate:"required"`
+  FemaleCount int `json:"female_count" validate:"required"`
+  ProjectType `gorm:"type:project_type" json:"project_type" validate:"required"` 
+  LocationID uint `json:"location_id" validate:"required"`
+  Location Location `json:"location" validate:"required"`
+  Members []Participant `json:"members" validate:"required"`
 }
 
 // Locations
 type Wing string
 const (
-	CE_F Wing = "CE_F"
-	CE_S Wing = "CE_S"
+	CEF Wing = "CEF"
+	CES Wing = "CES"
 	IT Wing = "IT"
 	EC Wing = "EC"
 	MCA Wing ="MCA"
@@ -61,9 +84,28 @@ const (
 )
 type Location struct {
 	gorm.Model
-	Name string
-	Wing  `gorm:"type:wing"`
-	TeamCapacity int // in terms of teams
+	Name string `json:"name" validate:"required"`
+	Wing string `json:"wing" validate:"required"`
+	Capacity int `json:"capacity" validate:"required"` // in terms of teams
+	Teams []Team `json:"teams" validate:"required"`
+}
+
+// Attendance
+type Attendance struct {
+	gorm.Model
+	Title string `json:"title" validate:"required"`
+	ActionID uint `json:"action_id" validate:"required"` 
+	Action Action `json:"action" validate:"required"`
+	ParticipantID uint `json:"participant_id" validate:"required"` 
+	Participant Participant `json:"participant" validate:"required"`
+}
+
+// Actions
+type Action struct {
+	gorm.Model
+	Title string `json:"title" validate:"required"`
+	Valid bool `json:"valid" gorm:"default:true"`
+	Attendance []Attendance
 }
 
 var db *gorm.DB
@@ -83,12 +125,14 @@ func main() {
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s port=%s", host, user, dbname, dbpassword, dbport)
 	
 	// Openning connection to database
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		FullSaveAssociations: true,
+	})
 
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println("Database connected successfully 🤝")
+		log.Printf("🤝 Database connected successfully") 
 	}
 
 	// Migrate the schema
@@ -100,40 +144,30 @@ func main() {
 	//// defer db.Close()
 
 	/*----------- API routes ------------*/
-	router := mux.NewRouter()
+	port := "8080"
 
-	router.HandleFunc("/teams", GetTeams).Methods("GET")
-	router.HandleFunc("/team/{id}", GetTeam).Methods("GET")
-	router.HandleFunc("/participants", GetParticipants).Methods("GET")
-	router.HandleFunc("/participant/{id}", GetParticipant).Methods("GET")
-	router.HandleFunc("/locations", GetParticipants).Methods("GET")
-	router.HandleFunc("/location/{id}", GetParticipant).Methods("GET")
+  	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
+    	port = fromEnv
+  	}
+	log.Printf("🚀 Starting up on http://localhost:%s", port)
 
-	router.HandleFunc("/create/team", CreateTeam).Methods("POST")
-	router.HandleFunc("/create/participant", CreateParticipant).Methods("POST")
+	r := mux.NewRouter()
+	
+    http.Handle("/",handlers.LoggingHandler(os.Stdout, r))
 
-	router.HandleFunc("/delete/team/{id}", DeleteTeam).Methods("DELETE")
-	router.HandleFunc("/delete/participant/{id}", DeleteParticipant).Methods("DELETE")
+	r.HandleFunc("/teams", GetTeams).Methods("GET")
+	r.HandleFunc("/teams/{id}", GetTeam).Methods("GET")
+	r.HandleFunc("/participants", GetParticipants).Methods("GET")
+	r.HandleFunc("/participants/{id}", GetParticipant).Methods("GET")
+	r.HandleFunc("/locations", GetLocations).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	r.HandleFunc("/teams", CreateTeam).Methods("POST")
+	r.HandleFunc("/participants", CreateParticipant).Methods("POST")
 
+	r.HandleFunc("/teams/{id}", DeleteTeam).Methods("DELETE")
+	r.HandleFunc("/participants/{id}", DeleteParticipant).Methods("DELETE")
 
-//   // Create
-//   db.Create(&Product{Code: "D42", Price: 100})
-
-//   // Read
-//   var product Product
-//   db.First(&product, 1) // find product with integer primary key
-//   db.First(&product, "code = ?", "D42") // find product with code D42
-
-//   // Update - update product's price to 200
-//   db.Model(&product).Update("Price", 200)
-//   // Update - update multiple fields
-//   db.Model(&product).Updates(Product{Price: 200, Code: "F42"}) // non-zero fields
-//   db.Model(&product).Updates(map[string]interface{}{"Price": 200, "Code": "F42"})
-
-//   // Delete - delete product
-//   db.Delete(&product, 1)
+	http.ListenAndServe(":8080", r)
 }
 
 
@@ -152,17 +186,16 @@ func GetTeam(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(&team)
 }
-
 func GetTeams(w http.ResponseWriter, r *http.Request) {
 	var teams []Team
 
-	db.Find(&teams)
+	db.Preload("Location").Preload("Members").Find(&teams)
 
 	json.NewEncoder(w).Encode(&teams)
 }
-
 func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	var team Team
+	// ctx := context.WithValue(r.Context(), "user", "123")
 	json.NewDecoder(r.Body).Decode(&team)
 
 	createdTeam := db.Create(&team)
@@ -173,7 +206,6 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(&createdTeam)
 }
-
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
@@ -194,15 +226,13 @@ func GetParticipant(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(&participant)
 }
-
 func GetParticipants(w http.ResponseWriter, r *http.Request) {
 	var participants []Participant
 
-	db.Find(&participants)
+	db.Preload("Team").Find(&participants)
 
 	json.NewEncoder(w).Encode(&participants)
 }
-
 func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 	var participant Participant
 	json.NewDecoder(r.Body).Decode(&participant)
@@ -213,9 +243,10 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
+
 	json.NewEncoder(w).Encode(&createdParticipant)
 }
-
 func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
@@ -236,15 +267,13 @@ func GetLocation(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(&location)
 }
-
 func GetLocations(w http.ResponseWriter, r *http.Request) {
 	var locations []Location
 
-	db.Find(&locations)
+	db.Preload("Teams").Find(&locations)
 
 	json.NewEncoder(w).Encode(&locations)
 }
-
 func CreateLocation(w http.ResponseWriter, r *http.Request) {
 	var location Location
 	json.NewDecoder(r.Body).Decode(&location)
@@ -257,7 +286,6 @@ func CreateLocation(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(&createdLocation)
 }
-
 func DeleteLocation(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
@@ -267,4 +295,66 @@ func DeleteLocation(w http.ResponseWriter, r *http.Request) {
 	db.Delete(&location)
 
 	json.NewEncoder(w).Encode(&location)
+}
+
+/*------- Attendance ------*/
+func GetAttendance(w http.ResponseWriter, r *http.Request) {
+	var attendance []Attendance
+
+	db.Preload("Action").Preload("Participant").Find(&attendance)
+
+	json.NewEncoder(w).Encode(&attendance)
+}
+func CreateAttendance(w http.ResponseWriter, r *http.Request) {
+	var attendance Attendance
+	json.NewDecoder(r.Body).Decode(&attendance)
+
+	createdAttendance := db.Create(&attendance)
+	err = createdAttendance.Error
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	json.NewEncoder(w).Encode(&createdAttendance)
+}
+func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	var attendance Attendance
+
+	db.First(&attendance, params["id"])
+	db.Delete(&attendance)
+
+	json.NewEncoder(w).Encode(&attendance)
+}
+
+/*------- Action ------*/
+func GetActions(w http.ResponseWriter, r *http.Request) {
+	var actions []Action
+
+	db.Preload("Attendance").Find(&actions)
+
+	json.NewEncoder(w).Encode(&actions)
+}
+func CreateAction(w http.ResponseWriter, r *http.Request) {
+	var action Action
+	json.NewDecoder(r.Body).Decode(&action)
+
+	createdAction := db.Create(&action)
+	err = createdAction.Error
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	json.NewEncoder(w).Encode(&createdAction)
+}
+func DeleteAction(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	var action Action
+
+	db.First(&action, params["id"])
+	db.Delete(&action)
+
+	json.NewEncoder(w).Encode(&action)
 }
