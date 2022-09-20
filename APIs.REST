@@ -1,0 +1,30 @@
+@baseUrl = http://localhost:8080
+
+### Teams -----
+GET {{baseUrl}}/teams
+
+###
+POST {{baseUrl}}/teams HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "Team Name",
+    "project_type": "IOT",
+    "location_id": 19
+}
+
+
+### Participants -----
+GET {{baseUrl}}/participants
+
+
+### Locations -----
+GET {{baseUrl}}/locations
+
+
+### Attendance -----
+GET {{baseUrl}}/attendance
+
+
+### Actions
+GET {{baseUrl}}/actions
