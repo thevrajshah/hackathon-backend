@@ -154,6 +154,9 @@ func main() {
 	
     http.Handle("*",handlers.LoggingHandler(os.Stdout, r))
 
+	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	}).Methods("GET")
 	r.HandleFunc("/teams", GetTeams).Methods("GET")
 	r.HandleFunc("/teams/{id}", GetTeam).Methods("GET")
 	r.HandleFunc("/participants", GetParticipants).Methods("GET")
@@ -174,7 +177,6 @@ func main() {
 
 	http.ListenAndServe(":8080", r)
 }
-
 
 /*-------- API Controllers --------*/
 
@@ -204,7 +206,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	var team Team
 	// ctx := context.WithValue(r.Context(), "user", "123")
 	json.NewDecoder(r.Body).Decode(&team)
-	fmt.Printf("%+v", team)
+	// fmt.Printf("%+v", team)
 	createdTeam := db.Create(&team)
 	err = createdTeam.Error
 	if err != nil {

@@ -1,5 +1,8 @@
 @baseUrl = http://localhost:8080
 
+###
+GET {{baseUrl}}/ping
+
 ### Teams -----
 GET {{baseUrl}}/teams
 
