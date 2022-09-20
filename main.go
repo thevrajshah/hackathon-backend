@@ -151,7 +151,7 @@ func main() {
 
 	r := mux.NewRouter()
 	
-    http.Handle("/",handlers.LoggingHandler(os.Stdout, r))
+    http.Handle("*",handlers.LoggingHandler(os.Stdout, r))
 
 	r.HandleFunc("/teams", GetTeams).Methods("GET")
 	r.HandleFunc("/teams/{id}", GetTeam).Methods("GET")
@@ -201,7 +201,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	var team Team
 	// ctx := context.WithValue(r.Context(), "user", "123")
 	json.NewDecoder(r.Body).Decode(&team)
-
+	fmt.Printf("%+v", team)
 	createdTeam := db.Create(&team)
 	err = createdTeam.Error
 	if err != nil {
@@ -247,7 +247,18 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
+	var team Team
+	db.Where("ID = ?", participant.TeamID).First(&team)
+
+  // Increment Counter
+  	if(participant.Gender == MALE){
+		db.Model(&team).Update("MaleCount", team.MaleCount+1)
+	} else{
+		db.Model(&team).Update("FemaleCount", team.FemaleCount+1)
+	}
+	
+
+	// db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
 
 	json.NewEncoder(w).Encode(&createdParticipant)
 }
