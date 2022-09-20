@@ -13,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+/*-------- Models --------*/
+
 // Participants
 type Gender string
 const (

@@ -5,12 +5,11 @@ go 1.19
 require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/jinzhu/gorm v1.9.16
 	gorm.io/driver/postgres v1.3.10
 	gorm.io/gorm v1.23.9
 )
 
-require github.com/felixge/httpsnoop v1.0.1 // indirect
+require github.com/felixge/httpsnoop v1.0.3 // indirect
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
