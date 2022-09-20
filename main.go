@@ -64,8 +64,8 @@ type Team struct {
   gorm.Model
 
   Name string `json:"name" validate:"required"`
-  MaleCount int `json:"male_count" validate:"required"`
-  FemaleCount int `json:"female_count" validate:"required"`
+  MaleCount int `json:"male_count" gorm:"default:0"`
+  FemaleCount int `json:"female_count" gorm:"default:0"`
   ProjectType `gorm:"type:project_type" json:"project_type" validate:"required"` 
   LocationID uint `json:"location_id" validate:"required"`
   Location Location `json:"location" validate:"required"`
@@ -93,7 +93,6 @@ type Location struct {
 // Attendance
 type Attendance struct {
 	gorm.Model
-	Title string `json:"title" validate:"required"`
 	ActionID uint `json:"action_id" validate:"required"` 
 	Action Action `json:"action" validate:"required"`
 	ParticipantID uint `json:"participant_id" validate:"required"` 
@@ -188,6 +187,7 @@ func GetTeam(w http.ResponseWriter, r *http.Request) {
 
 	team.Members = participants
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&team)
 }
 func GetTeams(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +195,7 @@ func GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	db.Preload("Location").Preload("Members").Find(&teams)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&teams)
 }
 func CreateTeam(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +209,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdTeam)
 }
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
@@ -218,6 +220,7 @@ func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 	db.First(&team, params["id"])
 	db.Delete(&team)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&team)
 }
 
@@ -228,6 +231,7 @@ func GetParticipant(w http.ResponseWriter, r *http.Request) {
 
 	db.First(&participant, params["id"])
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&participant)
 }
 func GetParticipants(w http.ResponseWriter, r *http.Request) {
@@ -235,6 +239,7 @@ func GetParticipants(w http.ResponseWriter, r *http.Request) {
 
 	db.Preload("Team").Find(&participants)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&participants)
 }
 func CreateParticipant(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +265,7 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 
 	// db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdParticipant)
 }
 func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
@@ -270,6 +276,7 @@ func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
 	db.First(&participant, params["id"])
 	db.Delete(&participant)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&participant)
 }
 
@@ -280,6 +287,7 @@ func GetLocation(w http.ResponseWriter, r *http.Request) {
 
 	db.First(&location, params["id"])
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&location)
 }
 func GetLocations(w http.ResponseWriter, r *http.Request) {
@@ -287,6 +295,7 @@ func GetLocations(w http.ResponseWriter, r *http.Request) {
 
 	db.Preload("Teams").Find(&locations)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&locations)
 }
 func CreateLocation(w http.ResponseWriter, r *http.Request) {
@@ -299,6 +308,7 @@ func CreateLocation(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdLocation)
 }
 func DeleteLocation(w http.ResponseWriter, r *http.Request) {
@@ -309,6 +319,7 @@ func DeleteLocation(w http.ResponseWriter, r *http.Request) {
 	db.First(&location, params["id"])
 	db.Delete(&location)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&location)
 }
 
@@ -316,8 +327,8 @@ func DeleteLocation(w http.ResponseWriter, r *http.Request) {
 func GetAttendance(w http.ResponseWriter, r *http.Request) {
 	var attendance []Attendance
 
-	db.Preload("Action").Preload("Participant").Find(&attendance)
-
+	db.Preload("Participant").Preload("Action").Find(&attendance)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&attendance)
 }
 func CreateAttendance(w http.ResponseWriter, r *http.Request) {
@@ -330,6 +341,7 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdAttendance)
 }
 func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
@@ -340,6 +352,7 @@ func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 	db.First(&attendance, params["id"])
 	db.Delete(&attendance)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&attendance)
 }
 
@@ -347,8 +360,8 @@ func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 func GetActions(w http.ResponseWriter, r *http.Request) {
 	var actions []Action
 
-	db.Preload("Attendance").Find(&actions)
-
+	db.Preload("Attendance").Preload("Attendance.Action").Preload("Attendance.Participant").Preload("Attendance.Participant.Team").Preload("Attendance.Participant.Team.Location").Find(&actions)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&actions)
 }
 func CreateAction(w http.ResponseWriter, r *http.Request) {
@@ -361,6 +374,7 @@ func CreateAction(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdAction)
 }
 func DeleteAction(w http.ResponseWriter, r *http.Request) {
@@ -371,5 +385,6 @@ func DeleteAction(w http.ResponseWriter, r *http.Request) {
 	db.First(&action, params["id"])
 	db.Delete(&action)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&action)
 }
