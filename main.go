@@ -27,10 +27,12 @@ const (
 	Aero    Department = "AERO"
 	Ce    Department = "CE"
 	Civil    Department = "CIVIL"
+	Csd    Department = "CSD"
 	Ec   Department = "EC"
 	Ele   Department = "ELE"
 	Ic   Department = "IC"
 	It   Department = "IT"
+	Mech   Department = "MEC"
 	Mca   Department = "MCA"
 )
 type ShirtSize string
@@ -43,15 +45,23 @@ const (
 	XXL    ShirtSize = "XXL"
 	XXXL    ShirtSize = "XXXL"
 )
+type Batch string
+const (
+	FY    Batch = "FY"
+	SY    Batch = "SY"
+	TY    Batch = "TY"
+	LY    Batch = "LY"
+)
 type Participant struct{
 	gorm.Model
 	
 	Name string	`json:"name" validate:"required"`
-	Email string `json:"email" gorm:"unique_index" validate:"required"`
+	Email string `json:"email" gorm:"unique_index"`
 	Phone int `json:"phone" validate:"required"`
-	Gender `gorm:"type:gender" json:"gender" validate:"required"`
+	// Gender string `gorm:"type:gender" json:"gender"`
 	Department `json:"department" validate:"required"`
-	ShirtSize `json:"shirt_size" validate:"required"`
+	Batch `json:"batch" validate:"required"`
+	ShirtSize `json:"shirt_size"`
 	TeamID uint `json:"team_id" validate:"required"`
 	Team Team `json:"team"`
 } 
@@ -84,11 +94,12 @@ const (
 	EC Wing = "EC"
 	MCA Wing ="MCA"
 	ARCH Wing = "ARCH"
+	CIVIL Wing = "CIVIL"
 )
 type Location struct {
 	gorm.Model
 	Name string `json:"name" validate:"required"`
-	Wing string `json:"wing" validate:"required"`
+	Wing `json:"wing" validate:"required"`
 	Capacity int `json:"capacity" validate:"required"` // in terms of teams
 	Teams []Team `json:"teams" validate:"required"`
 }
@@ -180,7 +191,7 @@ func main() {
 		r.Get("/", GetLocations)
 		r.Get("/{id}", GetLocation)
 
-		r.Post("/", CreateParticipant)
+		r.Post("/", CreateLocation)
 		r.Delete("/{id}", DeleteLocation)
 	})
 	
@@ -279,15 +290,15 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	var team Team
-	db.Where("ID = ?", participant.TeamID).First(&team)
+// 	var team Team
+// 	db.Where("ID = ?", participant.TeamID).First(&team)
 
-  // Increment Counter
-  	if(participant.Gender == MALE){
-		db.Model(&team).Update("MaleCount", team.MaleCount+1)
-	} else{
-		db.Model(&team).Update("FemaleCount", team.FemaleCount+1)
-	}
+//   // Increment Counter
+//   	if(participant.Gender == MALE){
+// 		db.Model(&team).Update("MaleCount", team.MaleCount+1)
+// 	} else{
+// 		db.Model(&team).Update("FemaleCount", team.FemaleCount+1)
+// 	}
 	
 
 	// db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
@@ -334,7 +345,8 @@ func CreateLocation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	j, _ := json.MarshalIndent(createdLocation, "", "🐱");
+	fmt.Println(string(j))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdLocation)
 }
