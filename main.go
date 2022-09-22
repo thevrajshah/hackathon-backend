@@ -269,7 +269,7 @@ func GetParticipant(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r,"id")
 	var participant Participant
 
-	db.First(&participant, id)
+	db.Preload("Team").Preload("Team.Location").First(&participant, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&participant)
