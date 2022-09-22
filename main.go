@@ -197,6 +197,7 @@ func main() {
 	
 	r.Route("/attendance", func(r chi.Router) {
 		r.Get("/", GetAttendance)
+		// r.Get("/count/{action_id}", GetAttendance)
 		
 		r.Post("/", CreateAttendance)
 		r.Delete("/{id}", DeleteAttendance)
@@ -204,6 +205,7 @@ func main() {
 	
 	r.Route("/actions", func(r chi.Router) {
 		r.Get("/", GetActions)
+		r.Get("/with_data", GetActionsWithData)
 		
 		r.Post("/", CreateAction)
 		r.Delete("/{id}", DeleteAction)
@@ -288,6 +290,8 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 	err = createdParticipant.Error
 	if err != nil {
 		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("500 - Something bad happened!"))
 	}
 
 // 	var team Team
@@ -370,11 +374,19 @@ func GetAttendance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&attendance)
 }
+// func GetAttendanceCount(w http.ResponseWriter, r *http.Request) {
+// 	action_id := chi.URLParam(r,"action_id")
+// 	var attendance []Attendance
+
+// 	db.Table("Attendance").Select("COUNT()").Find(&attendance)
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(&attendance)
+// }
 func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	var attendance Attendance
 	json.NewDecoder(r.Body).Decode(&attendance)
 
-	createdAttendance := db.Create(&attendance)
+	createdAttendance := db.FirstOrCreate(&attendance)
 	err = createdAttendance.Error
 	if err != nil {
 		fmt.Println(err)
@@ -397,6 +409,13 @@ func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 
 /*------- Action ------*/
 func GetActions(w http.ResponseWriter, r *http.Request) {
+	var actions struct {id uint
+		title string }
+	db.Table("actions").Select("id","title").Where("valid is true").Scan(actions)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&actions)
+}
+func GetActionsWithData(w http.ResponseWriter, r *http.Request) {
 	var actions []Action
 
 	db.Preload("Attendance").Preload("Attendance.Action").Preload("Attendance.Participant").Preload("Attendance.Participant.Team").Preload("Attendance.Participant.Team.Location").Find(&actions)
