@@ -388,18 +388,33 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	var attendance Attendance
 	json.NewDecoder(r.Body).Decode(&attendance)
 
-	createdAttendance := db.FirstOrCreate(&attendance)
-	err = createdAttendance.Error
-	if err != nil {
-		fmt.Println(err)
+	allow_duplicates:= chi.URLParam(r,"allowDuplicates")
+	fmt.Println(allow_duplicates)
+	if(allow_duplicates=="true"){
+		fmt.Println("Allowed duplicates")
+		createdAttendance := db.Create(&attendance)
+		err = createdAttendance.Error
+		if err != nil {
+			fmt.Println(err)
+			}	
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(&createdAttendance)
+		}
+	if(allow_duplicates=="false" || allow_duplicates==""){
+		fmt.Println("Disallowed duplicates")
+			createdAttendance := db.FirstOrCreate(&attendance)
+		fmt.Println("2",allow_duplicates)
+		err = createdAttendance.Error
+		if err != nil {
+			fmt.Println(err)
+		}	
+		if(createdAttendance.RowsAffected ==0){
+			w.WriteHeader(304)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(&createdAttendance)
 	}
-fmt.Println(createdAttendance.RowsAffected)
-	// w.WriteHeader()
-if(createdAttendance.RowsAffected ==0){
-	w.WriteHeader(304)
-}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&createdAttendance)
+
 }
 func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r,"id")
@@ -419,7 +434,7 @@ func GetActions(w http.ResponseWriter, r *http.Request) {
 	// 	ID uint
 	// 	title string }
 // db.Table("actions").Select("ID","title").Where("valid is true").Scan(&actions)
-var actions []Action
+	var actions []Action
 
 	db.Preload("Attendance").Preload("Attendance.Action").Find(&actions)
 	w.Header().Set("Content-Type", "application/json")
