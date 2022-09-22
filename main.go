@@ -308,6 +308,7 @@ func CreateParticipant(w http.ResponseWriter, r *http.Request) {
 	// db.Model(&Team{}).Where("ID = ?", participant.TeamID).Update("name", "hello")
 
 	w.Header().Set("Content-Type", "application/json")
+	
 	json.NewEncoder(w).Encode(&createdParticipant)
 }
 func DeleteParticipant(w http.ResponseWriter, r *http.Request) {
@@ -372,6 +373,7 @@ func GetAttendance(w http.ResponseWriter, r *http.Request) {
 
 	db.Preload("Participant").Preload("Action").Find(&attendance)
 	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(&attendance)
 }
 // func GetAttendanceCount(w http.ResponseWriter, r *http.Request) {
@@ -391,6 +393,8 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+fmt.Println(createdAttendance.RowsAffected)
+	// w.WriteHeader()
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdAttendance)
@@ -409,9 +413,13 @@ func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
 
 /*------- Action ------*/
 func GetActions(w http.ResponseWriter, r *http.Request) {
-	var actions struct {id uint
-		title string }
-	db.Table("actions").Select("id","title").Where("valid is true").Scan(actions)
+	// var actions struct {
+	// 	ID uint
+	// 	title string }
+// db.Table("actions").Select("ID","title").Where("valid is true").Scan(&actions)
+var actions []Action
+
+	db.Preload("Attendance").Preload("Attendance.Action").Find(&actions)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&actions)
 }
