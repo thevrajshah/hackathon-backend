@@ -395,7 +395,9 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	}
 fmt.Println(createdAttendance.RowsAffected)
 	// w.WriteHeader()
-
+if(createdAttendance.RowsAffected ==0){
+	w.WriteHeader(304)
+}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&createdAttendance)
 }

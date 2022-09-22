@@ -19,7 +19,7 @@ Content-Type: application/json
 }
 
 ### Attendance -----
-POST {{baseUrl}}/actions HTTP/1.1
+POST {{baseUrl}}/attendance HTTP/1.1
 Content-Type: application/json
 
 {
