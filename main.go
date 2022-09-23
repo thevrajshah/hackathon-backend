@@ -390,7 +390,7 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 
 	allow_duplicates:= chi.URLParam(r,"allowDuplicates")
 	fmt.Println(allow_duplicates)
-	if(allow_duplicates=="true"){
+	// if(allow_duplicates=="true"){
 		fmt.Println("Allowed duplicates")
 		createdAttendance := db.Create(&attendance)
 		err = createdAttendance.Error
@@ -399,21 +399,21 @@ func CreateAttendance(w http.ResponseWriter, r *http.Request) {
 			}	
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(&createdAttendance)
-		}
-	if(allow_duplicates=="false" || allow_duplicates==""){
-		fmt.Println("Disallowed duplicates")
-			createdAttendance := db.FirstOrCreate(&attendance)
-		fmt.Println("2",allow_duplicates)
-		err = createdAttendance.Error
-		if err != nil {
-			fmt.Println(err)
-		}	
-		if(createdAttendance.RowsAffected ==0){
-			w.WriteHeader(304)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(&createdAttendance)
-	}
+		// }
+	// if(allow_duplicates=="false" || allow_duplicates==""){
+	// 	fmt.Println("Disallowed duplicates")
+	// 		createdAttendance := db.FirstOrCreate(&attendance)
+	// 	fmt.Println("2",allow_duplicates)
+	// 	err = createdAttendance.Error
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}	
+	// 	if(createdAttendance.RowsAffected ==0){
+	// 		w.WriteHeader(304)
+	// 	}
+	// 	w.Header().Set("Content-Type", "application/json")
+	// 	json.NewEncoder(w).Encode(&createdAttendance)
+	// }
 
 }
 func DeleteAttendance(w http.ResponseWriter, r *http.Request) {
