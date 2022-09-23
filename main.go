@@ -436,7 +436,7 @@ func GetActions(w http.ResponseWriter, r *http.Request) {
 // db.Table("actions").Select("ID","title").Where("valid is true").Scan(&actions)
 	var actions []Action
 
-	db.Preload("Attendance").Preload("Attendance.Action").Find(&actions)
+	db.Preload("Attendance").Preload("Attendance.Action").Where(&Action{Valid: true}).Find(&actions)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&actions)
 }
